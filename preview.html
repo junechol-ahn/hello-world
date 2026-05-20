@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marble Grand Prix - Single File HTML Game</title>
+  <style>
+    :root {
+      --bg-0: #07111f;
+      --bg-1: #10223c;
+      --panel: rgba(8, 16, 30, 0.76);
+      --panel-strong: rgba(8, 16, 30, 0.92);
+      --line: rgba(255, 255, 255, 0.14);
+      --text: #eef6ff;
+      --muted: #9db0c8;
+      --accent: #f6c34a;
+      --green: #42df91;
+      --red: #ff6f6f;
+      --blue: #65b8ff;
+      --track: #3c4350;
+      --track-edge: #111722;
+      --grass: #17482e;
+      --sand: #9a7a42;
+      --shadow: rgba(0, 0, 0, 0.38);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(99, 172, 255, 0.12), transparent 38%),
+        linear-gradient(180deg, var(--bg-1), var(--bg-0));
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, select, input {
+      font: inherit;
+      color: inherit;
+    }
+
+    #app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-width: 320px;
+    }
+
+    header {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: linear-gradient(90deg, rgba(9, 17, 31, 0.96), rgba(13, 24, 43, 0.82));
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 220px;
+      white-space: nowrap;
+    }
+
+    .logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 32% 27%, white 0 7%, rgba(255,255,255,0.45) 8% 16%, transparent 17%),
+        conic-gradient(from 20deg, #ff7a7a, #f6c34a, #42df91, #65b8ff, #b189ff, #ff7a7a);
+      box-shadow: inset -7px -9px 12px rgba(0,0,0,0.36), 0 0 18px rgba(246,195,74,0.36);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 8px;
+      min-height: 38px;
+    }
+
+    .control-group label {
+      font-size: 12px;
+      color: var(--muted);
+      padding-left: 2px;
+    }
+
+    select, input[type="range"] {
+      background: rgba(9, 17, 31, 0.76);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      height: 28px;
+      padding: 0 10px;
+      outline: none;
+    }
+
+    input[type="range"] {
+      width: 88px;
+      accent-color: var(--accent);
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 13px;
+      cursor: pointer;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.16);
+      transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.07); }
+    button:active { transform: translateY(1px); }
+
+    #startBtn {
+      background: linear-gradient(180deg, #3be38e, #1c9f61);
+      color: #04120b;
+      font-weight: 800;
+      border: 1px solid rgba(255,255,255,0.24);
+    }
+
+    #resetBtn { background: rgba(255,255,255,0.075); }
+    #shuffleBtn { background: rgba(101,184,255,0.16); }
+
+    #game {
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    #hud {
+      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+    }
+
+    .scoreboard {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: min(330px, calc(100vw - 28px));
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 18px 46px rgba(0,0,0,0.28);
+      overflow: hidden;
+    }
+
+    .board-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px 9px;
+      border-bottom: 1px solid rgba(255,255,255,0.09);
+    }
+
+    .board-title {
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      font-size: 13px;
+      text-transform: uppercase;
+    }
+
+    .race-time {
+      font-variant-numeric: tabular-nums;
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    #leaderList {
+      margin: 0;
+      padding: 8px;
+      list-style: none;
+      display: grid;
+      gap: 5px;
+    }
+
+    #leaderList li {
+      display: grid;
+      grid-template-columns: 28px 22px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.052);
+      border: 1px solid rgba(255,255,255,0.07);
+      min-height: 36px;
+      font-size: 13px;
+    }
+
+    #leaderList li.leader {
+      background: linear-gradient(90deg, rgba(246,195,74,0.25), rgba(255,255,255,0.07));
+      border-color: rgba(246,195,74,0.38);
+    }
+
+    .rank {
+      font-weight: 900;
+      color: #e9f2ff;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.88;
+    }
+
+    .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      box-shadow: inset -4px -5px 7px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.14);
+    }
+
+    .name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .lap {
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ticker {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      width: min(560px, calc(100vw - 28px));
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 10px 12px;
+      box-shadow: 0 16px 42px rgba(0,0,0,0.25);
+      backdrop-filter: blur(16px);
+    }
+
+    .ticker-line {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ticker-line strong { color: var(--text); }
+    .flag { color: var(--accent); font-weight: 900; }
+
+    .stats {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      display: grid;
+      grid-template-columns: repeat(3, auto);
+      gap: 8px;
+    }
+
+    .pill {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 11px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.2);
+      backdrop-filter: blur(16px);
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .pill b {
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #toast {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(520px, calc(100vw - 32px));
+      padding: 22px;
+      border-radius: 24px;
+      background: var(--panel-strong);
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.42);
+      backdrop-filter: blur(18px);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      scale: 0.96;
+      transition: opacity 0.25s ease, scale 0.25s ease;
+    }
+
+    #toast.show {
+      opacity: 1;
+      scale: 1;
+    }
+
+    #toast h2 {
+      margin: 0 0 8px;
+      font-size: clamp(22px, 4vw, 36px);
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    #toast p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .help {
+      position: absolute;
+      left: 14px;
+      top: 66px;
+      max-width: 320px;
+      color: rgba(238,246,255,0.73);
+      text-shadow: 0 2px 7px rgba(0,0,0,0.45);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 900px) {
+      header {
+        align-items: flex-start;
+        gap: 8px;
+        flex-direction: column;
+      }
+      .brand { min-width: 0; }
+      .controls { justify-content: flex-start; width: 100%; }
+      .scoreboard { top: auto; bottom: 70px; right: 10px; width: min(300px, calc(100vw - 20px)); }
+      #leaderList { max-height: 260px; overflow: hidden; }
+      .ticker { bottom: 10px; left: 10px; width: min(520px, calc(100vw - 20px)); }
+      .stats { top: 10px; left: 10px; grid-template-columns: repeat(2, auto); }
+      .help { display: none; }
+    }
+
+    @media (max-width: 560px) {
+      h1 { font-size: 16px; }
+      .sub { display: none; }
+      .control-group { padding: 4px 7px; }
+      .control-group label { display: none; }
+      select { max-width: 126px; }
+      .scoreboard { display: none; }
+      .stats { grid-template-columns: 1fr; }
+      .pill { padding: 7px 9px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="brand" aria-label="Game title">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Marble Grand Prix</h1>
+          <div class="sub">lap racing, overtakes, boosts, and a live standings board</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button id="startBtn" type="button">Start Race</button>
+        <button id="resetBtn" type="button">Reset</button>
+        <button id="shuffleBtn" type="button">Shuffle Grid</button>
+        <div class="control-group">
+          <label for="trackSelect">Track</label>
+          <select id="trackSelect" aria-label="Track"></select>
+        </div>
+        <div class="control-group">
+          <label for="lapsSelect">Laps</label>
+          <select id="lapsSelect" aria-label="Laps">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="speedRange">Speed</label>
+          <input id="speedRange" type="range" min="0.7" max="2.2" step="0.1" value="1" aria-label="Race speed" />
+          <span id="speedLabel">1.0x</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="game">
+      <canvas id="raceCanvas" aria-label="Marble racing game canvas"></canvas>
+      <div id="hud" aria-live="polite">
+        <div class="stats">
+          <div class="pill">Track: <b id="trackName">Speedway Spiral</b></div>
+          <div class="pill">Lap: <b id="lapCounter">0/3</b></div>
+          <div class="pill">Status: <b id="statusText">Ready</b></div>
+        </div>
+        <div class="help">Space: start/pause, R: reset, F: fast-forward. Marbles choose racing lines, get slipstream boosts, and slow down through tight corners.</div>
+        <section class="scoreboard" aria-label="Leaderboard">
+          <div class="board-head">
+            <div class="board-title">Live Standings</div>
+            <div class="race-time" id="raceTime">00.00</div>
+          </div>
+          <ol id="leaderList"></ol>
+        </section>
+        <div class="ticker">
+          <div class="ticker-line" id="tickerText"><span class="flag">READY</span><strong>Pick a track and start the race.</strong></div>
+        </div>
+        <div id="toast">
+          <h2 id="toastTitle">Ready?</h2>
+          <p id="toastMessage">Press Start Race to launch the marbles.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      const canvas = document.getElementById("raceCanvas");
+      const ctx = canvas.getContext("2d");
+      const startBtn = document.getElementById("startBtn");
+      const resetBtn = document.getElementById("resetBtn");
+      const shuffleBtn = document.getElementById("shuffleBtn");
+      const trackSelect = document.getElementById("trackSelect");
+      const lapsSelect = document.getElementById("lapsSelect");
+      const speedRange = document.getElementById("speedRange");
+      const speedLabel = document.getElementById("speedLabel");
+      const leaderList = document.getElementById("leaderList");
+      const raceTimeEl = document.getElementById("raceTime");
+      const trackNameEl = document.getElementById("trackName");
+      const lapCounterEl = document.getElementById("lapCounter");
+      const statusTextEl = document.getElementById("statusText");
+      const tickerText = document.getElementById("tickerText");
+      const toast = document.getElementById("toast");
+      const toastTitle = document.getElementById("toastTitle");
+      const toastMessage = document.getElementById("toastMessage");
+
+      const TAU = Math.PI * 2;
+      const TRACK_WIDTH = 58;
+      const GRID_SPACING = 16;
+      const MAX_DT = 0.033;
+
+      const TRACKS = [
+        {
+          name: "Speedway Spiral",
+          theme: "green",
+          points: [
+            [0.50, 0.12], [0.70, 0.13], [0.87, 0.24], [0.86, 0.42], [0.68, 0.48],
+            [0.50, 0.41], [0.34, 0.46], [0.30, 0.63], [0.45, 0.78], [0.68, 0.80],
+            [0.86, 0.69], [0.88, 0.86], [0.53, 0.91], [0.18, 0.82], [0.15, 0.55],
+            [0.18, 0.27], [0.33, 0.15]
+          ]
+        },
+        {
+          name: "Midnight Bay",
+          theme: "night",
+          points: [
+            [0.14, 0.20], [0.38, 0.13], [0.66, 0.14], [0.86, 0.25], [0.86, 0.45],
+            [0.66, 0.56], [0.83, 0.68], [0.79, 0.86], [0.51, 0.90], [0.29, 0.80],
+            [0.18, 0.61], [0.32, 0.49], [0.17, 0.37]
+          ]
+        },
+        {
+          name: "Corkscrew Circuit",
+          theme: "sand",
+          points: [
+            [0.21, 0.22], [0.45, 0.12], [0.78, 0.16], [0.89, 0.34], [0.76, 0.47],
+            [0.55, 0.39], [0.40, 0.47], [0.52, 0.60], [0.74, 0.57], [0.86, 0.72],
+            [0.72, 0.88], [0.38, 0.88], [0.18, 0.70], [0.12, 0.45]
+          ]
+        },
+        {
+          name: "Hive Drive",
+          theme: "gold",
+          points: [
+            [0.50, 0.11], [0.73, 0.18], [0.87, 0.33], [0.80, 0.51], [0.62, 0.50],
+            [0.53, 0.35], [0.38, 0.42], [0.44, 0.58], [0.62, 0.63], [0.79, 0.71],
+            [0.71, 0.88], [0.42, 0.90], [0.18, 0.75], [0.13, 0.54], [0.23, 0.34], [0.34, 0.20]
+          ]
+        }
+      ];
+
+      const TEAM_PRESETS = [
+        { name: "Ocean Bolt", color: "#36a3ff", accent: "#e7fbff" },
+        { name: "Solar Flare", color: "#ffb331", accent: "#fff1c5" },
+        { name: "Mint Comet", color: "#3fe09a", accent: "#ecfff7" },
+        { name: "Ruby Rush", color: "#ff4d68", accent: "#ffe8ec" },
+        { name: "Violet Vortex", color: "#9569ff", accent: "#efe8ff" },
+        { name: "Lime Lancer", color: "#a7ef39", accent: "#f9ffe9" },
+        { name: "Ghost Pearl", color: "#dce8f2", accent: "#ffffff" },
+        { name: "Ember Dash", color: "#ff7b2c", accent: "#fff0e4" },
+        { name: "Aqua Arrow", color: "#20d7d2", accent: "#e8ffff" },
+        { name: "Black Ice", color: "#2c3240", accent: "#cfe0ff" },
+        { name: "Rose Rocket", color: "#ff83bd", accent: "#fff0f8" },
+        { name: "Thunder Roll", color: "#e9df48", accent: "#fffbd0" }
+      ];
+
+      let state = {
+        running: false,
+        finished: false,
+        started: false,
+        elapsed: 0,
+        selectedTrack: 0,
+        laps: 3,
+        marbles: [],
+        path: null,
+        width: 0,
+        height: 0,
+        dpr: 1,
+        lastFrame: performance.now(),
+        countdown: 0,
+        messageTimer: 0,
+        eventLog: [],
+        fireworks: [],
+        shake: 0,
+        lastLeader: null,
+        rngSeed: 1
+      };
+
+      function seededRandom(seed) {
+        let t = seed + 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function angleDiff(a, b) {
+        let d = a - b;
+        while (d > Math.PI) d -= TAU;
+        while (d < -Math.PI) d += TAU;
+        return d;
+      }
+
+      function catmullRom(p0, p1, p2, p3, t) {
+        const t2 = t * t;
+        const t3 = t2 * t;
+        return {
+          x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+          y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+        };
+      }
+
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        canvas.style.width = rect.width + "px";
+        canvas.style.height = rect.height + "px";
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        state.dpr = dpr;
+        state.width = rect.width;
+        state.height = rect.height;
+        buildTrack();
+      }
+
+      function buildTrack() {
+        const track = TRACKS[state.selectedTrack];
+        const w = state.width;
+        const h = state.height;
+        const topOffset = 12;
+        const marginX = clamp(w * 0.04, 18, 52);
+        const marginY = clamp(h * 0.05, 22, 52) + topOffset;
+        const usableW = Math.max(320, w - marginX * 2);
+        const usableH = Math.max(220, h - marginY * 2);
+        const pts = track.points.map(p => ({
+          x: marginX + p[0] * usableW,
+          y: marginY + p[1] * usableH
+        }));
+        const samples = [];
+        const perSegment = 20;
+        for (let i = 0; i < pts.length; i++) {
+          const p0 = pts[(i - 1 + pts.length) % pts.length];
+          const p1 = pts[i];
+          const p2 = pts[(i + 1) % pts.length];
+          const p3 = pts[(i + 2) % pts.length];
+          for (let j = 0; j < perSegment; j++) {
+            const t = j / perSegment;
+            samples.push(catmullRom(p0, p1, p2, p3, t));
+          }
+        }
+
+        let total = 0;
+        for (let i = 0; i < samples.length; i++) {
+          const a = samples[i];
+          const b = samples[(i + 1) % samples.length];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          a.angle = Math.atan2(dy, dx);
+          a.segment = Math.hypot(dx, dy);
+          a.cum = total;
+          total += a.segment;
+        }
+        for (let i = 0; i < samples.length; i++) {
+          const prev = samples[(i - 2 + samples.length) % samples.length];
+          const next = samples[(i + 2) % samples.length];
+          const turn = Math.abs(angleDiff(next.angle, prev.angle));
+          samples[i].curve = clamp(turn / 0.75, 0, 1.35);
+        }
+        state.path = { samples, total, track };
+      }
+
+      function pointAt(distance, laneOffset) {
+        const path = state.path;
+        const total = path.total;
+        let d = distance % total;
+        if (d < 0) d += total;
+        const samples = path.samples;
+        let lo = 0;
+        let hi = samples.length - 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (samples[mid].cum <= d) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        const i = Math.max(0, hi);
+        const a = samples[i];
+        const b = samples[(i + 1) % samples.length];
+        const seg = Math.max(0.001, a.segment);
+        const t = clamp((d - a.cum) / seg, 0, 1);
+        const x = lerp(a.x, b.x, t);
+        const y = lerp(a.y, b.y, t);
+        const angle = a.angle;
+        const nx = -Math.sin(angle);
+        const ny = Math.cos(angle);
+        return {
+          x: x + nx * laneOffset,
+          y: y + ny * laneOffset,
+          angle,
+          curve: lerp(a.curve, b.curve, t),
+          nx,
+          ny
+        };
+      }
+
+      function populateTrackOptions() {
+        trackSelect.innerHTML = "";
+        TRACKS.forEach((track, index) => {
+          const opt = document.createElement("option");
+          opt.value = String(index);
+          opt.textContent = track.name;
+          trackSelect.appendChild(opt);
+        });
+      }
+
+      function createMarbles(shuffle) {
+        const order = TEAM_PRESETS.slice();
+        if (shuffle) {
+          for (let i = order.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [order[i], order[j]] = [order[j], order[i]];
+          }
+        }
+        state.marbles = order.map((team, index) => {
+          const seed = Math.floor(rand(1, 999999));
+          const r1 = seededRandom(seed);
+          const r2 = seededRandom(seed + 99);
+          const r3 = seededRandom(seed + 333);
+          const lane = ((index % 4) - 1.5) * 12;
+          return {
+            id: index,
+            name: team.name,
+            color: team.color,
+            accent: team.accent,
+            seed,
+            baseSpeed: lerp(95, 123, r1),
+            acceleration: lerp(2.0, 3.2, r2),
+            cornering: lerp(0.74, 1.08, r3),
+            bravery: lerp(0.7, 1.22, seededRandom(seed + 555)),
+            dist: -(index * GRID_SPACING + 5),
+            speed: 0,
+            laneOffset: lane,
+            targetLane: lane,
+            bob: rand(0, TAU),
+            boost: 0,
+            boostTimer: rand(0.5, 2.5),
+            finishTime: null,
+            finished: false,
+            lapFlash: 0,
+            number: index + 1,
+            lastLap: 0,
+            overtakePulse: 0
+          };
+        });
+      }
+
+      function resetRace(shuffle) {
+        state.running = false;
+        state.finished = false;
+        state.started = false;
+        state.elapsed = 0;
+        state.countdown = 0;
+        state.messageTimer = 0;
+        state.eventLog = [];
+        state.fireworks = [];
+        state.shake = 0;
+        state.lastLeader = null;
+        state.laps = Number(lapsSelect.value) || 3;
+        populateTrackInfo();
+        createMarbles(Boolean(shuffle));
+        showToast("Ready to race", "Press Start Race. Tight corners, slipstreams, and random boosts decide the podium.", true);
+        setTicker("READY", "Pick a track, choose laps, and launch the grid.");
+        updateHud();
+        renderLeaderboard();
+      }
+
+      function populateTrackInfo() {
+        const track = TRACKS[state.selectedTrack];
+        trackNameEl.textContent = track.name;
+        lapCounterEl.textContent = "0/" + state.laps;
+        statusTextEl.textContent = "Ready";
+      }
+
+      function startOrPauseRace() {
+        if (state.finished) {
+          resetRace(false);
+          return;
+        }
+        state.running = !state.running;
+        if (state.running) {
+          state.started = true;
+          startBtn.textContent = "Pause";
+          statusTextEl.textContent = "Racing";
+          hideToast();
+          if (state.elapsed === 0) {
+            setTicker("GO", "The marbles launch from the grid.");
+          }
+        } else {
+          startBtn.textContent = "Resume";
+          statusTextEl.textContent = "Paused";
+          showToast("Race paused", "Press Resume or Space to continue.", false);
+        }
+      }
+
+      function showToast(title, message, persistent) {
+        toastTitle.textContent = title;
+        toastMessage.textContent = message;
+        toast.classList.add("show");
+        state.messageTimer = persistent ? Infinity : 1.4;
+      }
+
+      function hideToast() {
+        toast.classList.remove("show");
+        state.messageTimer = 0;
+      }
+
+      function setTicker(flag, message) {
+        tickerText.innerHTML = "<span class=\"flag\">" + flag + "</span><strong>" + message + "</strong>";
+      }
+
+      function progressOf(marble) {
+        if (marble.finished) return state.path.total * state.laps + 1000 - marble.finishTime * 0.001;
+        return marble.dist;
+      }
+
+      function standings() {
+        return state.marbles.slice().sort((a, b) => {
+          if (a.finished && b.finished) return a.finishTime - b.finishTime;
+          if (a.finished) return -1;
+          if (b.finished) return 1;
+          return progressOf(b) - progressOf(a);
+        });
+      }
+
+      function updateRace(dt) {
+        const speedMult = Number(speedRange.value) || 1;
+        const scaledDt = dt * speedMult;
+        state.elapsed += scaledDt;
+        state.shake = Math.max(0, state.shake - scaledDt * 2.4);
+
+        const rankingBefore = standings().map(m => m.id).join(",");
+        const sortedBefore = standings();
+        const leaderBefore = sortedBefore[0];
+
+        for (const marble of state.marbles) {
+          if (marble.finished) continue;
+          const pos = pointAt(marble.dist, marble.laneOffset);
+          const lap = Math.floor(Math.max(0, marble.dist) / state.path.total);
+          const inRaceLap = clamp(lap + 1, 1, state.laps);
+
+          if (lap > marble.lastLap && lap < state.laps) {
+            marble.lastLap = lap;
+            marble.lapFlash = 1;
+            setTicker("LAP", marble.name + " starts lap " + (lap + 1) + ".");
+          }
+
+          marble.boostTimer -= scaledDt;
+          if (marble.boostTimer <= 0) {
+            const boostChance = 0.42 + marble.bravery * 0.12;
+            marble.boost = Math.random() < boostChance ? rand(0.05, 0.18) : rand(-0.07, 0.04);
+            marble.boostTimer = rand(0.75, 2.2);
+          } else {
+            marble.boost *= Math.pow(0.55, scaledDt);
+          }
+
+          const nearestAhead = findNearestAhead(marble);
+          let slipstream = 0;
+          if (nearestAhead && nearestAhead.gap > 12 && nearestAhead.gap < 78) {
+            const laneGap = Math.abs(nearestAhead.marble.laneOffset - marble.laneOffset);
+            slipstream = clamp((78 - nearestAhead.gap) / 78, 0, 1) * clamp((28 - laneGap) / 28, 0, 1) * 0.16;
+          }
+
+          if (Math.random() < scaledDt * 0.45) {
+            const sign = Math.random() < 0.5 ? -1 : 1;
+            const curveLean = pos.curve > 0.4 ? -Math.sign(angleDiff(pos.angle, pointAt(marble.dist + 30, marble.laneOffset).angle) || sign) : sign;
+            marble.targetLane = clamp(curveLean * rand(2, TRACK_WIDTH * 0.38) + rand(-12, 12), -TRACK_WIDTH * 0.40, TRACK_WIDTH * 0.40);
+          }
+
+          const cornerPenalty = clamp(1 - pos.curve * (0.27 / marble.cornering), 0.54, 1.04);
+          const lanePenalty = 1 - Math.abs(marble.laneOffset) / (TRACK_WIDTH * 10);
+          const rubberBand = sortedBefore.indexOf(marble) > state.marbles.length * 0.65 ? 0.035 : 0;
+          const pulse = Math.sin(state.elapsed * (1.6 + marble.bravery * 0.3) + marble.bob) * 0.025;
+          const targetSpeed = marble.baseSpeed * cornerPenalty * lanePenalty * (1 + marble.boost + slipstream + rubberBand + pulse);
+
+          marble.speed += (targetSpeed - marble.speed) * clamp(scaledDt * marble.acceleration, 0, 0.45);
+          marble.speed = clamp(marble.speed, 38, 172);
+          marble.dist += marble.speed * scaledDt;
+          marble.laneOffset += (marble.targetLane - marble.laneOffset) * clamp(scaledDt * 2.0, 0, 1);
+          marble.laneOffset += Math.sin(state.elapsed * 7 + marble.bob) * 0.22 * scaledDt;
+          marble.lapFlash = Math.max(0, marble.lapFlash - scaledDt * 1.8);
+          marble.overtakePulse = Math.max(0, marble.overtakePulse - scaledDt * 2.6);
+
+          if (marble.dist >= state.path.total * state.laps) {
+            marble.finished = true;
+            marble.finishTime = state.elapsed;
+            marble.speed = 0;
+            const place = standings().filter(m => m.finished).length;
+            if (place === 1) {
+              state.finished = true;
+              state.running = false;
+              startBtn.textContent = "New Race";
+              statusTextEl.textContent = "Finished";
+              launchFireworks(marble);
+              showToast(marble.name + " wins!", "Final time: " + formatTime(marble.finishTime) + ". Reset or change the track for another race.", true);
+              setTicker("WINNER", marble.name + " takes the checkered flag.");
+            } else {
+              setTicker("FINISH", marble.name + " crosses the line in P" + place + ".");
+            }
+          }
+
+          marble.visibleLap = inRaceLap;
+        }
+
+        const rankingAfter = standings().map(m => m.id).join(",");
+        const leaderAfter = standings()[0];
+        if (rankingAfter !== rankingBefore) {
+          const after = standings();
+          after.forEach((m, rank) => {
+            const beforeRank = sortedBefore.findIndex(x => x.id === m.id);
+            if (beforeRank > rank) m.overtakePulse = 1;
+          });
+        }
+        if (leaderBefore && leaderAfter && leaderBefore.id !== leaderAfter.id) {
+          state.shake = 0.2;
+          setTicker("LEAD", leaderAfter.name + " moves into P1.");
+        }
+
+        updateFireworks(scaledDt);
+        updateHud();
+      }
+
+      function findNearestAhead(marble) {
+        let best = null;
+        for (const other of state.marbles) {
+          if (other.id === marble.id || other.finished) continue;
+          const gap = other.dist - marble.dist;
+          if (gap > 0 && (!best || gap < best.gap)) best = { marble: other, gap };
+        }
+        return best;
+      }
+
+      function updateHud() {
+        const leader = standings()[0];
+        const leaderLap = leader ? clamp(Math.floor(Math.max(0, leader.dist) / state.path.total) + 1, 0, state.laps) : 0;
+        lapCounterEl.textContent = (state.finished ? state.laps : leaderLap) + "/" + state.laps;
+        raceTimeEl.textContent = formatTime(state.elapsed);
+        speedLabel.textContent = Number(speedRange.value).toFixed(1) + "x";
+        if (state.running) statusTextEl.textContent = "Racing";
+        else if (state.finished) statusTextEl.textContent = "Finished";
+        else if (state.started) statusTextEl.textContent = "Paused";
+        else statusTextEl.textContent = "Ready";
+      }
+
+      function formatTime(seconds) {
+        if (!Number.isFinite(seconds)) return "--.--";
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds - mins * 60;
+        if (mins > 0) return String(mins).padStart(2, "0") + ":" + secs.toFixed(2).padStart(5, "0");
+        return secs.toFixed(2).padStart(5, "0");
+      }
+
+      function renderLeaderboard() {
+        const sorted = standings();
+        const maxItems = Math.min(12, sorted.length);
+        const rows = [];
+        for (let i = 0; i < maxItems; i++) {
+          const m = sorted[i];
+          const currentLap = m.finished ? "FIN" : "L" + clamp(Math.floor(Math.max(0, m.dist) / state.path.total) + 1, 1, state.laps);
+          rows.push(
+            "<li class=\"" + (i === 0 ? "leader" : "") + "\">" +
+            "<span class=\"rank\">" + (i + 1) + "</span>" +
+            "<span class=\"dot\" style=\"background:" + m.color + "\"></span>" +
+            "<span class=\"name\">" + m.name + "</span>" +
+            "<span class=\"lap\">" + (m.finished ? formatTime(m.finishTime) : currentLap) + "</span>" +
+            "</li>"
+          );
+        }
+        leaderList.innerHTML = rows.join("");
+      }
+
+      function drawScene() {
+        const w = state.width;
+        const h = state.height;
+        ctx.save();
+        ctx.clearRect(0, 0, w, h);
+        drawBackground(w, h);
+
+        if (state.shake > 0) {
+          ctx.translate(rand(-5, 5) * state.shake, rand(-5, 5) * state.shake);
+        }
+
+        drawTrackBase();
+        drawTrackDecorations();
+        drawMarbles();
+        drawFireworks();
+        ctx.restore();
+      }
+
+      function drawBackground(w, h) {
+        const track = TRACKS[state.selectedTrack];
+        const g = ctx.createLinearGradient(0, 0, 0, h);
+        if (track.theme === "night") {
+          g.addColorStop(0, "#08162a");
+          g.addColorStop(1, "#06101c");
+        } else if (track.theme === "sand") {
+          g.addColorStop(0, "#3d3521");
+          g.addColorStop(1, "#1b2518");
+        } else if (track.theme === "gold") {
+          g.addColorStop(0, "#2c2814");
+          g.addColorStop(1, "#09261a");
+        } else {
+          g.addColorStop(0, "#123b28");
+          g.addColorStop(1, "#071b16");
+        }
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = "#ffffff";
+        for (let i = 0; i < 80; i++) {
+          const x = (i * 163) % Math.max(1, w);
+          const y = (i * 97) % Math.max(1, h);
+          const r = 0.6 + ((i * 11) % 20) / 20;
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, TAU);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        drawGrandstands(w, h);
+      }
+
+      function drawGrandstands(w, h) {
+        ctx.save();
+        ctx.globalAlpha = 0.38;
+        ctx.fillStyle = "#0a101b";
+        ctx.fillRect(0, 0, w, 34);
+        ctx.fillRect(0, h - 42, w, 42);
+        for (let x = 0; x < w; x += 14) {
+          ctx.fillStyle = x % 42 === 0 ? "#f6c34a" : (x % 28 === 0 ? "#65b8ff" : "#e8efff");
+          ctx.fillRect(x + 4, 10, 5, 12);
+          ctx.fillRect(x + 6, h - 28, 5, 12);
+        }
+        ctx.restore();
+      }
+
+      function makeTrackPath(offset) {
+        const samples = state.path.samples;
+        ctx.beginPath();
+        for (let i = 0; i < samples.length; i++) {
+          const p = pointAt(samples[i].cum, offset || 0);
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+      }
+
+      function drawTrackBase() {
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        makeTrackPath(0);
+        ctx.strokeStyle = "rgba(0,0,0,0.43)";
+        ctx.lineWidth = TRACK_WIDTH + 22;
+        ctx.stroke();
+
+        makeTrackPath(0);
+        ctx.strokeStyle = "#121923";
+        ctx.lineWidth = TRACK_WIDTH + 12;
+        ctx.stroke();
+
+        makeTrackPath(0);
+        const asphalt = ctx.createLinearGradient(0, 0, state.width, state.height);
+        asphalt.addColorStop(0, "#535b68");
+        asphalt.addColorStop(0.45, "#383f4c");
+        asphalt.addColorStop(1, "#2a303a");
+        ctx.strokeStyle = asphalt;
+        ctx.lineWidth = TRACK_WIDTH;
+        ctx.stroke();
+
+        makeTrackPath(0);
+        ctx.strokeStyle = "rgba(255,255,255,0.12)";
+        ctx.lineWidth = TRACK_WIDTH - 14;
+        ctx.stroke();
+
+        makeTrackPath(0);
+        ctx.setLineDash([18, 18]);
+        ctx.strokeStyle = "rgba(255,255,255,0.36)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.restore();
+      }
+
+      function drawTrackDecorations() {
+        const samples = state.path.samples;
+        ctx.save();
+        ctx.lineCap = "butt";
+        for (let i = 0; i < samples.length; i += 7) {
+          const a = pointAt(samples[i].cum, TRACK_WIDTH * 0.52);
+          const b = pointAt(samples[i].cum + 7, TRACK_WIDTH * 0.52);
+          const c = pointAt(samples[i].cum, -TRACK_WIDTH * 0.52);
+          const d = pointAt(samples[i].cum + 7, -TRACK_WIDTH * 0.52);
+          ctx.strokeStyle = (i / 7) % 2 < 1 ? "#ffffff" : "#e44b4b";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+          ctx.moveTo(c.x, c.y); ctx.lineTo(d.x, d.y);
+          ctx.stroke();
+        }
+
+        const start = pointAt(0, 0);
+        ctx.save();
+        ctx.translate(start.x, start.y);
+        ctx.rotate(start.angle + Math.PI / 2);
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.fillRect(-TRACK_WIDTH / 2 - 4, -4, TRACK_WIDTH + 8, 8);
+        ctx.fillStyle = "#111722";
+        const cells = 8;
+        for (let i = 0; i < cells; i++) {
+          for (let j = 0; j < 2; j++) {
+            if ((i + j) % 2 === 0) ctx.fillRect(-TRACK_WIDTH / 2 + i * TRACK_WIDTH / cells, -4 + j * 4, TRACK_WIDTH / cells, 4);
+          }
+        }
+        ctx.restore();
+
+        ctx.restore();
+      }
+
+      function drawMarbles() {
+        const sorted = state.marbles.slice().sort((a, b) => a.dist - b.dist);
+        for (const marble of sorted) {
+          const finishDist = state.path.total * state.laps;
+          const drawDist = marble.finished ? finishDist - 0.1 : marble.dist;
+          const p = pointAt(drawDist, marble.laneOffset);
+          const radius = 9.5 + marble.overtakePulse * 2.5 + marble.lapFlash * 1.6;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+
+          ctx.globalAlpha = 0.36;
+          ctx.fillStyle = "#000000";
+          ctx.beginPath();
+          ctx.ellipse(2, 9, radius * 1.05, radius * 0.42, 0, 0, TAU);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+
+          if (marble.boost > 0.04 && !marble.finished) {
+            ctx.save();
+            ctx.rotate(p.angle + Math.PI);
+            const flame = ctx.createRadialGradient(-radius * 0.8, 0, 0, -radius * 1.9, 0, radius * 1.7);
+            flame.addColorStop(0, "rgba(255,242,170,0.88)");
+            flame.addColorStop(0.5, "rgba(255,146,53,0.36)");
+            flame.addColorStop(1, "rgba(255,146,53,0)");
+            ctx.fillStyle = flame;
+            ctx.beginPath();
+            ctx.ellipse(-radius * 1.3, 0, radius * 1.9, radius * 0.85, 0, 0, TAU);
+            ctx.fill();
+            ctx.restore();
+          }
+
+          const g = ctx.createRadialGradient(-radius * 0.35, -radius * 0.45, radius * 0.15, 0, 0, radius * 1.2);
+          g.addColorStop(0, marble.accent);
+          g.addColorStop(0.22, marble.color);
+          g.addColorStop(1, "#07111f");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(0, 0, radius, 0, TAU);
+          ctx.fill();
+
+          ctx.strokeStyle = "rgba(255,255,255,0.46)";
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+
+          ctx.fillStyle = "rgba(255,255,255,0.70)";
+          ctx.beginPath();
+          ctx.arc(-radius * 0.34, -radius * 0.38, radius * 0.23, 0, TAU);
+          ctx.fill();
+
+          ctx.fillStyle = "rgba(0,0,0,0.56)";
+          ctx.font = "800 8px system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(String(marble.number), 0, 0.8);
+
+          if (marble.overtakePulse > 0.02 || marble.lapFlash > 0.02) {
+            ctx.strokeStyle = marble.lapFlash > marble.overtakePulse ? "rgba(246,195,74,0.82)" : "rgba(101,184,255,0.74)";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, radius + 5 + Math.sin(state.elapsed * 18) * 1.2, 0, TAU);
+            ctx.stroke();
+          }
+
+          ctx.restore();
+        }
+      }
+
+      function launchFireworks(winner) {
+        const finish = pointAt(state.path.total * state.laps - 4, 0);
+        for (let i = 0; i < 120; i++) {
+          const a = rand(0, TAU);
+          const sp = rand(55, 230);
+          state.fireworks.push({
+            x: finish.x + rand(-40, 40),
+            y: finish.y + rand(-25, 25),
+            vx: Math.cos(a) * sp,
+            vy: Math.sin(a) * sp,
+            life: rand(0.7, 1.6),
+            maxLife: 1.6,
+            color: i % 3 === 0 ? winner.color : (i % 3 === 1 ? "#f6c34a" : "#ffffff")
+          });
+        }
+      }
+
+      function updateFireworks(dt) {
+        for (const p of state.fireworks) {
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 90 * dt;
+          p.vx *= Math.pow(0.92, dt * 10);
+          p.life -= dt;
+        }
+        state.fireworks = state.fireworks.filter(p => p.life > 0);
+      }
+
+      function drawFireworks() {
+        if (!state.fireworks.length) return;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        for (const p of state.fireworks) {
+          ctx.globalAlpha = clamp(p.life / p.maxLife, 0, 1);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.2, 0, TAU);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      }
+
+      function loop(now) {
+        let dt = (now - state.lastFrame) / 1000;
+        state.lastFrame = now;
+        if (!Number.isFinite(dt)) dt = 0;
+        dt = Math.min(dt, MAX_DT);
+
+        if (state.running) updateRace(dt);
+        else updateFireworks(dt);
+
+        if (state.messageTimer !== Infinity && state.messageTimer > 0) {
+          state.messageTimer -= dt;
+          if (state.messageTimer <= 0) hideToast();
+        }
+
+        drawScene();
+        renderLeaderboard();
+        requestAnimationFrame(loop);
+      }
+
+      startBtn.addEventListener("click", startOrPauseRace);
+      resetBtn.addEventListener("click", () => resetRace(false));
+      shuffleBtn.addEventListener("click", () => resetRace(true));
+      lapsSelect.addEventListener("change", () => resetRace(false));
+      speedRange.addEventListener("input", updateHud);
+      trackSelect.addEventListener("change", () => {
+        state.selectedTrack = Number(trackSelect.value) || 0;
+        buildTrack();
+        resetRace(false);
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.target && ["INPUT", "SELECT", "BUTTON"].includes(event.target.tagName)) return;
+        if (event.code === "Space") {
+          event.preventDefault();
+          startOrPauseRace();
+        } else if (event.key.toLowerCase() === "r") {
+          resetRace(false);
+        } else if (event.key.toLowerCase() === "f") {
+          speedRange.value = speedRange.value === "2.2" ? "1" : "2.2";
+          updateHud();
+        }
+      });
+
+      window.addEventListener("resize", resizeCanvas);
+
+      populateTrackOptions();
+      resizeCanvas();
+      resetRace(true);
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
